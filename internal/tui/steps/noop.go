@@ -1,6 +1,9 @@
 package steps
 
+import tea "github.com/charmbracelet/bubbletea"
+
 type Noop struct {
+	filled bool
 }
 
 func NewNoopStep() Noop {
@@ -8,5 +11,26 @@ func NewNoopStep() Noop {
 }
 
 func (t Noop) Filled() bool {
-	return false
+	return t.filled
+}
+
+func (t Noop) Init() tea.Cmd {
+	return nil
+}
+
+func (t Noop) Update(msg tea.Msg) (WizardStep, tea.Cmd) {
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		switch msg.String() {
+		case "ctrl+c", "esc", "q":
+			t.filled = true
+			return t, ReturnCmd
+		}
+	}
+
+	return t, nil
+}
+
+func (t Noop) View() string {
+	return "Noop Step"
 }
