@@ -24,6 +24,12 @@ var (
 	selected_style    = lipgloss.NewStyle().Foreground(lipgloss.Color("255"))
 	filled_step_style = lipgloss.NewStyle().Foreground(lipgloss.Color("245"))
 	empty_step_style  = lipgloss.NewStyle().Foreground(lipgloss.Color("235"))
+	menu_active_style = lipgloss.NewStyle().
+				BorderStyle(lipgloss.RoundedBorder()).BorderForeground(lipgloss.Color("135")).
+				Padding(1, 3)
+	menu_inactive_style = lipgloss.NewStyle().
+				BorderStyle(lipgloss.RoundedBorder()).BorderForeground(lipgloss.Color("235")).
+				Padding(1, 3)
 )
 
 func New() TUI {
@@ -92,11 +98,10 @@ func (t TUI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (t TUI) View() string {
-	if t.active >= 0 {
-		return t.steps[t.active].step.View()
-	}
+	var views = []string{}
 
-	s := fmt.Sprintf("%s Setup Mesh Network Simulation\n\n", t.spinner.View())
+	w := fmt.Sprintf("%s Setup Mesh Network Simulation\n\n", t.spinner.View())
+	s := ""
 
 	for i, step := range t.steps {
 		cursor := " " // no cursor
@@ -118,9 +123,17 @@ func (t TUI) View() string {
 		s += fmt.Sprintf("%s %s\n", cursor, style.Render(step.label))
 	}
 
+	if t.active >= 0 {
+		views = append(views, menu_inactive_style.Render(s))
+		views = append(views, menu_active_style.Render(t.steps[t.active].step.View()))
+	} else {
+		views = append(views, menu_active_style.Render(s))
+	}
+
+	w += lipgloss.JoinHorizontal(lipgloss.Top, views...)
 	// The footer
-	s += "\nPress q to quit.\n"
+	w += "\nPress q to quit.\n"
 
 	// Send the UI for rendering
-	return s
+	return w
 }
