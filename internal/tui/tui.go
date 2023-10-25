@@ -10,26 +10,18 @@ import (
 
 type TUI struct {
 	spinner spinner.Model
-	steps   []StepDefinition
+	steps   []steps.StepDefinition
 	cursor  int
 	active  int
-}
-
-type StepDefinition struct {
-	label string
-	step  steps.WizardStep
+	width   int
+	height  int
 }
 
 var (
-	selected_style    = lipgloss.NewStyle().Foreground(lipgloss.Color("255"))
-	filled_step_style = lipgloss.NewStyle().Foreground(lipgloss.Color("245"))
-	empty_step_style  = lipgloss.NewStyle().Foreground(lipgloss.Color("235"))
-	menu_active_style = lipgloss.NewStyle().
-				BorderStyle(lipgloss.RoundedBorder()).BorderForeground(lipgloss.Color("135")).
-				Padding(1, 3)
-	menu_inactive_style = lipgloss.NewStyle().
-				BorderStyle(lipgloss.RoundedBorder()).BorderForeground(lipgloss.Color("235")).
-				Padding(1, 3)
+	menuBaseStyle     = lipgloss.NewStyle().BorderStyle(lipgloss.RoundedBorder()).Padding(1, 3, 1, 3)
+	menuActiveStyle   = menuBaseStyle.Copy().BorderForeground(lipgloss.Color("105"))
+	menuInactiveStyle = menuBaseStyle.Copy().BorderForeground(lipgloss.Color("235"))
+	hintStyle         = lipgloss.NewStyle().Foreground(lipgloss.Color("236")).Padding(1)
 )
 
 func New() TUI {
@@ -40,17 +32,19 @@ func New() TUI {
 	return TUI{
 		spinner: s,
 		active:  -1,
-		steps: []StepDefinition{
-			{label: "0. Render Colors", step: steps.NewColorsStep()},
-			{label: "1. Select Mesh", step: steps.NewNoopStep()},
-			{label: "2. Select Algo", step: steps.NewNoopStep()},
-			{label: "3. Run Simulation", step: steps.NewNoopStep()},
+		width:   1,
+		height:  1,
+		steps: []steps.StepDefinition{
+			steps.NewStepDefinition("0. Render Colors", steps.NewColorsStep()),
+			steps.NewStepDefinition("1. Select Mesh", steps.NewMeshStep()),
+			steps.NewStepDefinition("2. Select Algo", steps.NewNoopStep()),
+			steps.NewStepDefinition("3. Run Simulation", steps.NewNoopStep()),
 		},
 	}
 }
 
 func (t TUI) Init() tea.Cmd {
-	return t.spinner.Tick
+	return tea.Batch(t.spinner.Tick)
 }
 
 func (t TUI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -59,10 +53,15 @@ func (t TUI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case steps.ReturnMsg:
 		t.active = -1
+
+	case tea.WindowSizeMsg:
+		t.width = msg.Width
+		t.height = msg.Height - 10
+
 	case tea.KeyMsg:
 		if t.active >= 0 {
-			step := t.steps[t.active].step
-			t.steps[t.active].step, cmd = step.Update(msg)
+			step := t.steps[t.active].Step
+			t.steps[t.active].Step, cmd = step.Update(msg)
 			return t, cmd
 		}
 
@@ -104,35 +103,22 @@ func (t TUI) View() string {
 	s := ""
 
 	for i, step := range t.steps {
-		cursor := " " // no cursor
-		if t.cursor == i {
-			cursor = "|" // cursor!
-		}
-
-		var style *lipgloss.Style = nil
-		if t.cursor == i {
-			style = &selected_style
-		} else {
-			if step.step.Filled() {
-				style = &filled_step_style
-			} else {
-				style = &empty_step_style
-			}
-		}
-		// Render the row
-		s += fmt.Sprintf("%s %s\n", cursor, style.Render(step.label))
+		s += step.View(i == t.cursor) + "\n"
 	}
 
+	widthStyle := lipgloss.NewStyle().Width(30)
+	heightStyle := lipgloss.NewStyle().Height(t.height)
+
 	if t.active >= 0 {
-		views = append(views, menu_inactive_style.Render(s))
-		views = append(views, menu_active_style.Render(t.steps[t.active].step.View()))
+		views = append(views, menuInactiveStyle.Copy().Inherit(widthStyle).Inherit(heightStyle).Render(s))
+		views = append(views, menuActiveStyle.Copy().Inherit(heightStyle).Render(t.steps[t.active].Step.View()))
 	} else {
-		views = append(views, menu_active_style.Render(s))
+		views = append(views, menuActiveStyle.Copy().Inherit(widthStyle).Inherit(heightStyle).Render(s))
 	}
 
 	w += lipgloss.JoinHorizontal(lipgloss.Top, views...)
 	// The footer
-	w += "\nPress q to quit.\n"
+	w += hintStyle.Render("\nPress q to quit.\n")
 
 	// Send the UI for rendering
 	return w

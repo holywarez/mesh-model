@@ -44,5 +44,5 @@ func (m model) View() string {
 		}
 	}
 
-	return s
+	return lipgloss.NewStyle().Padding(1, 3).Render(s)
 }
