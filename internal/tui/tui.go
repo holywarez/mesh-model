@@ -44,7 +44,15 @@ func New() TUI {
 }
 
 func (t TUI) Init() tea.Cmd {
-	return tea.Batch(t.spinner.Tick)
+	var cmds []tea.Cmd
+
+	for _, step := range t.steps {
+		cmds = append(cmds, step.Step.Init())
+	}
+
+	cmds = append(cmds, t.spinner.Tick)
+
+	return tea.Batch(cmds...)
 }
 
 func (t TUI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -57,6 +65,10 @@ func (t TUI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		t.width = msg.Width
 		t.height = msg.Height - 10
+		if t.active >= 0 {
+			t.steps[t.active].Step, cmd = t.steps[t.active].Step.Update(msg)
+			return t, cmd
+		}
 
 	case tea.KeyMsg:
 		if t.active >= 0 {
@@ -82,7 +94,7 @@ func (t TUI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		// The "enter" key and the spacebar (a literal space) toggle
 		// the selected state for the item that the cursor is pointing at.
-		case "enter", " ":
+		case "enter", " ", "right":
 			t.active = t.cursor
 		}
 	default:
@@ -97,7 +109,7 @@ func (t TUI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (t TUI) View() string {
-	var views = []string{}
+	var views []string
 
 	w := fmt.Sprintf("%s Setup Mesh Network Simulation\n\n", t.spinner.View())
 	s := ""

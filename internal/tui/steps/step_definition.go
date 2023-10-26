@@ -46,7 +46,7 @@ func (sd StepDefinition) View(selected bool) string {
 
 func (sd StepDefinition) ViewValue() string {
 	if sd.Step.Filled() {
-		return "configured"
+		return fmt.Sprintf("-> %s", sd.Step.SelectedValueText())
 	}
 
 	return menuValueStyle.Copy().Foreground(lipgloss.Color("240")).Render("not configured")

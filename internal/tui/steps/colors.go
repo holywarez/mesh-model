@@ -13,7 +13,7 @@ func NewColorsStep() WizardStep {
 }
 
 func (m model) Filled() bool {
-	return true
+	return false
 }
 
 func (m model) Init() tea.Cmd {
@@ -24,7 +24,7 @@ func (m model) Update(msg tea.Msg) (WizardStep, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
-		case "ctrl+c", "esc", "q":
+		case "ctrl+c", "esc", "q", "left":
 			return m, ReturnCmd
 		}
 	}
@@ -45,4 +45,8 @@ func (m model) View() string {
 	}
 
 	return lipgloss.NewStyle().Padding(1, 3).Render(s)
+}
+
+func (m model) SelectedValueText() string {
+	return ""
 }

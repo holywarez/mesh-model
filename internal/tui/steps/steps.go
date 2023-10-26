@@ -7,6 +7,7 @@ type WizardStep interface {
 	Init() tea.Cmd
 	Update(msg tea.Msg) (WizardStep, tea.Cmd)
 	View() string
+	SelectedValueText() string
 }
 
 func ReturnCmd() tea.Msg {
