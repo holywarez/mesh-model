@@ -1,6 +1,18 @@
 package steps
 
-import tea "github.com/charmbracelet/bubbletea"
+import (
+	"fmt"
+	tea "github.com/charmbracelet/bubbletea"
+)
+
+const BRAILLE_OFFSET = '\u2800'
+
+var BRAILLE = [4][2]rune{
+	{'\u0001', '\u0008'},
+	{'\u0002', '\u0010'},
+	{'\u0004', '\u0020'},
+	{'\u0040', '\u0080'},
+}
 
 type Noop struct {
 }
@@ -30,7 +42,9 @@ func (t Noop) Update(msg tea.Msg) (WizardStep, tea.Cmd) {
 }
 
 func (t Noop) View() string {
-	return "Noop Step"
+	x := BRAILLE[1][0] | BRAILLE[1][1] + BRAILLE_OFFSET
+	y := BRAILLE[2][0] | BRAILLE[2][1] + BRAILLE_OFFSET
+	return fmt.Sprintf("Noop Step: %s", string([]rune{x, y}))
 }
 
 func (t Noop) SelectedValueText() string {
